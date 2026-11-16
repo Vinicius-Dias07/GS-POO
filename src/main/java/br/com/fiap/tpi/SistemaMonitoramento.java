@@ -1,7 +1,9 @@
 package br.com.fiap.tpi;
 
+import br.com.fiap.tpi.domain.Alerta;
 import br.com.fiap.tpi.domain.Medicao;
 import br.com.fiap.tpi.domain.PontoMonitoramento;
+import br.com.fiap.tpi.domain.ResultadoPrevisao;
 import br.com.fiap.tpi.domain.Sensor;
 import br.com.fiap.tpi.domain.SensorPluviometro;
 import br.com.fiap.tpi.exception.DadosInvalidosException;
@@ -14,6 +16,7 @@ import org.springframework.context.annotation.Profile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 /**
@@ -58,6 +61,7 @@ public class SistemaMonitoramento implements CommandLineRunner {
             switch (opcao) {
                 case "1" -> verificarSensores();
                 case "2" -> registrarLeituraManual();
+                case "3" -> rodarPrevisoesEAlertas();
                 case "4" -> verHistorico();
                 case "0" -> continuar = false;
                 default -> System.out.println("Opção inválida: \"" + opcao + "\". Digite um número do menu.");
@@ -86,7 +90,8 @@ public class SistemaMonitoramento implements CommandLineRunner {
         System.out.println("=== Territory Predictive Insights — Clima Local ===");
         System.out.println("1. Verificar sensores (ler e gravar medições)");
         System.out.println("2. Registrar leitura manual");
-        System.out.println("4. Ver histórico de medições por sensor");
+        System.out.println("3. Rodar previsões e alertas");
+        System.out.println("4. Ver histórico (medições por sensor / alertas emitidos)");
         System.out.println("0. Sair");
     }
 
@@ -134,9 +139,58 @@ public class SistemaMonitoramento implements CommandLineRunner {
         }
     }
 
+    // ---------- Opção 3 ----------
+
+    private void rodarPrevisoesEAlertas() {
+        for (PontoMonitoramento ponto : pontos) {
+            for (Sensor sensor : ponto.getSensores()) {
+                ResultadoPrevisao resultado = servico.rodarPrevisao(sensor.getId());
+                System.out.println();
+                System.out.println(sensor.getNome() + " — " + ponto.getNome());
+                System.out.println("  Estratégia: " + resultado.estrategia()
+                        + " | leituras no histórico: " + resultado.quantidadeLeituras());
+                System.out.println("  " + resultado.interpretacao());
+
+                if (!resultado.confiavel()) {
+                    continue; // sem previsão confiável, não há o que avaliar
+                }
+                Optional<Alerta> alerta = servico.avaliarAlerta(sensor, resultado);
+                if (alerta.isPresent()) {
+                    System.out.println("  🚨 " + alerta.get().getMensagem());
+                } else {
+                    System.out.println("  ✔ Sem alerta: previsão abaixo do nível de atenção.");
+                }
+            }
+        }
+        System.out.println();
+        System.out.println("Os alertas apoiam a decisão da equipe local — não substituem a avaliação humana.");
+    }
+
     // ---------- Opção 4 ----------
 
     private void verHistorico() {
+        String escolha = lerLinha("1 - Medições por sensor | 2 - Alertas emitidos: ");
+        if (escolha == null) {
+            return;
+        }
+        switch (escolha) {
+            case "1" -> verHistoricoMedicoes();
+            case "2" -> verAlertasEmitidos();
+            default -> System.out.println("Opção inválida: \"" + escolha + "\". Digite 1 ou 2.");
+        }
+    }
+
+    private void verAlertasEmitidos() {
+        List<Alerta> alertas = servico.listarAlertasEmitidos();
+        if (alertas.isEmpty()) {
+            System.out.println("Nenhum alerta emitido até agora.");
+            return;
+        }
+        System.out.println("Alertas emitidos (" + alertas.size() + "), do mais recente ao mais antigo:");
+        alertas.forEach(a -> System.out.println("  " + a));
+    }
+
+    private void verHistoricoMedicoes() {
         try {
             String sensorId = lerLinha("ID do sensor (" + listarIdsSensores() + "): ");
             if (sensorId == null) {
