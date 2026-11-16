@@ -1,6 +1,7 @@
 package br.com.fiap.tpi.service;
 
 import br.com.fiap.tpi.domain.NivelAlerta;
+import br.com.fiap.tpi.domain.TipoPrevisao;
 import br.com.fiap.tpi.domain.TipoSensor;
 import br.com.fiap.tpi.exception.DadosInvalidosException;
 import org.springframework.stereotype.Component;
@@ -9,7 +10,8 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Guarda os limiares de alerta por tipo de sensor e nível.
+ * Guarda os limiares de alerta por tipo de sensor e nível, e a estratégia
+ * de previsão padrão.
  * É um bean comum do Spring (uma instância gerenciada pelo container),
  * não o padrão Singleton — a equipe escolheu Factory e Builder como padrões.
  */
@@ -17,6 +19,7 @@ import java.util.Map;
 public class ConfiguracaoSistema {
 
     private final Map<TipoSensor, Map<NivelAlerta, Double>> limiares = new EnumMap<>(TipoSensor.class);
+    private TipoPrevisao estrategiaPadrao = TipoPrevisao.MEDIA_MOVEL;
 
     public ConfiguracaoSistema() {
         registrarPadrao(TipoSensor.CHUVA, 20.0, 40.0, 60.0);       // mm/h
@@ -52,6 +55,17 @@ public class ConfiguracaoSistema {
             }
         }
         doTipo.put(nivel, valor);
+    }
+
+    public TipoPrevisao getEstrategiaPadrao() {
+        return estrategiaPadrao;
+    }
+
+    public void setEstrategiaPadrao(TipoPrevisao estrategiaPadrao) throws DadosInvalidosException {
+        if (estrategiaPadrao == null) {
+            throw new DadosInvalidosException("A estratégia de previsão padrão não pode ser vazia");
+        }
+        this.estrategiaPadrao = estrategiaPadrao;
     }
 
     private void registrarPadrao(TipoSensor tipo, double atencao, double alerta, double critico) {

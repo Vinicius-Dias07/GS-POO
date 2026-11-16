@@ -5,10 +5,13 @@ import br.com.fiap.tpi.domain.Medicao;
 import br.com.fiap.tpi.domain.NivelAlerta;
 import br.com.fiap.tpi.domain.ResultadoPrevisao;
 import br.com.fiap.tpi.domain.SensorPluviometro;
+import br.com.fiap.tpi.domain.TipoPrevisao;
+import br.com.fiap.tpi.domain.TipoSensor;
 import br.com.fiap.tpi.exception.DadosInvalidosException;
 import br.com.fiap.tpi.repository.AlertaRepository;
 import br.com.fiap.tpi.repository.MedicaoRepository;
 import br.com.fiap.tpi.service.ConfiguracaoSistema;
+import br.com.fiap.tpi.service.FabricaPrevisao;
 import br.com.fiap.tpi.service.ServicoMonitoramento;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,7 +51,8 @@ class ServicoMonitoramentoTest {
 
     @BeforeEach
     void prepararCenario() throws DadosInvalidosException {
-        servico = new ServicoMonitoramento(medicaoRepository, alertaRepository, new ConfiguracaoSistema());
+        servico = new ServicoMonitoramento(medicaoRepository, alertaRepository,
+                new ConfiguracaoSistema(), new FabricaPrevisao());
         pluviometro = new SensorPluviometro("PLU-01", "Pluviômetro do Córrego", "Zona Leste");
     }
 
@@ -75,6 +82,29 @@ class ServicoMonitoramentoTest {
 
         // Assert
         verify(medicaoRepository, never()).save(any(Medicao.class));
+    }
+
+    // ---------- Previsão ----------
+
+    @Test
+    void rodarPrevisaoUsaHistoricoDoRepositoryEEstrategiaDaFabrica() throws DadosInvalidosException {
+        // Arrange
+        LocalDateTime inicio = LocalDateTime.of(2026, 11, 16, 14, 0);
+        List<Medicao> historico = new ArrayList<>();
+        double[] valores = {10, 20, 30, 40, 50};
+        for (int i = 0; i < valores.length; i++) {
+            historico.add(Medicao.criar("PLU-01", "Pluviômetro do Córrego", "Zona Leste",
+                    TipoSensor.CHUVA, valores[i], inicio.plusMinutes(i)));
+        }
+        when(medicaoRepository.findBySensorIdOrderByDataHoraAsc("PLU-01")).thenReturn(historico);
+
+        // Act
+        ResultadoPrevisao resultado = servico.rodarPrevisao("PLU-01", TipoPrevisao.MEDIA_MOVEL);
+
+        // Assert
+        assertEquals("Média móvel", resultado.estrategia());
+        assertEquals(30.0, resultado.valorPrevisto(), 0.0001);
+        verify(medicaoRepository).findBySensorIdOrderByDataHoraAsc("PLU-01");
     }
 
     // ---------- Alertas ----------

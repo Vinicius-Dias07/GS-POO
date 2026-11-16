@@ -4,9 +4,9 @@ import br.com.fiap.tpi.domain.Alerta;
 import br.com.fiap.tpi.domain.EstrategiaPrevisao;
 import br.com.fiap.tpi.domain.Medicao;
 import br.com.fiap.tpi.domain.NivelAlerta;
-import br.com.fiap.tpi.domain.PrevisaoMediaMovel;
 import br.com.fiap.tpi.domain.ResultadoPrevisao;
 import br.com.fiap.tpi.domain.Sensor;
+import br.com.fiap.tpi.domain.TipoPrevisao;
 import br.com.fiap.tpi.domain.TipoSensor;
 import br.com.fiap.tpi.exception.DadosInvalidosException;
 import br.com.fiap.tpi.exception.FonteIndisponivelException;
@@ -28,20 +28,21 @@ import java.util.Optional;
 @Service
 public class ServicoMonitoramento {
 
-    /** Quantas medições a média móvel considera. */
-    private static final int JANELA_PADRAO = 5;
     private static final Locale PORTUGUES_BRASIL = Locale.of("pt", "BR");
 
     private final MedicaoRepository medicaoRepository;
     private final AlertaRepository alertaRepository;
     private final ConfiguracaoSistema configuracao;
+    private final FabricaPrevisao fabricaPrevisao;
 
     public ServicoMonitoramento(MedicaoRepository medicaoRepository,
                                 AlertaRepository alertaRepository,
-                                ConfiguracaoSistema configuracao) {
+                                ConfiguracaoSistema configuracao,
+                                FabricaPrevisao fabricaPrevisao) {
         this.medicaoRepository = medicaoRepository;
         this.alertaRepository = alertaRepository;
         this.configuracao = configuracao;
+        this.fabricaPrevisao = fabricaPrevisao;
     }
 
     // ---------- Medições ----------
@@ -67,11 +68,19 @@ public class ServicoMonitoramento {
 
     // ---------- Previsão e alertas ----------
 
-    /** Busca o histórico do sensor no banco e aplica a estratégia de previsão. */
-    public ResultadoPrevisao rodarPrevisao(String sensorId) {
-        // Fase 5: estratégia fixa. Na Fase 6 a escolha passa para a FabricaPrevisao.
-        EstrategiaPrevisao estrategia = new PrevisaoMediaMovel(JANELA_PADRAO);
+    /**
+     * Busca o histórico do sensor no banco e aplica a estratégia pedida.
+     * A Factory entrega a estratégia certa; aqui só conhecemos EstrategiaPrevisao
+     * e o polimorfismo decide qual prever() é executado.
+     */
+    public ResultadoPrevisao rodarPrevisao(String sensorId, TipoPrevisao tipo) throws DadosInvalidosException {
+        EstrategiaPrevisao estrategia = fabricaPrevisao.criar(tipo);
         return estrategia.prever(buscarHistoricoPorSensor(sensorId));
+    }
+
+    /** Mesma previsão, usando a estratégia padrão configurada. */
+    public ResultadoPrevisao rodarPrevisao(String sensorId) throws DadosInvalidosException {
+        return rodarPrevisao(sensorId, configuracao.getEstrategiaPadrao());
     }
 
     /**
@@ -118,13 +127,9 @@ public class ServicoMonitoramento {
                                   double limite, String estrategia) {
         TipoSensor tipo = sensor.getTipo();
         return String.format(PORTUGUES_BRASIL,
-                "[%s] %s (%s): %s prevista de %.1f %s ultrapassa o limite de %s (%.1f %s) — estratégia: %s",
+                "[%s] %s (%s): previsão de %s de %.1f %s ultrapassa o limite do nível %s (%.1f %s) — estratégia: %s",
                 nivel.getDescricao().toUpperCase(PORTUGUES_BRASIL), sensor.getNome(), sensor.getRegiao(),
-                primeiraMaiuscula(tipo.getDescricao()), valorPrevisto, tipo.getUnidade(),
-                nivel.getDescricao().toLowerCase(PORTUGUES_BRASIL), limite, tipo.getUnidade(), estrategia);
-    }
-
-    private static String primeiraMaiuscula(String texto) {
-        return Character.toUpperCase(texto.charAt(0)) + texto.substring(1);
+                tipo.getDescricao(), valorPrevisto, tipo.getUnidade(),
+                nivel.getDescricao(), limite, tipo.getUnidade(), estrategia);
     }
 }
