@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Uma leitura de sensor, gravada no banco (entidade JPA).
@@ -17,6 +18,8 @@ import java.time.LocalDateTime;
  */
 @Entity
 public class Medicao {
+
+    private static final DateTimeFormatter FORMATO_DATA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -100,7 +103,7 @@ public class Medicao {
 
     @Override
     public String toString() {
-        return dataHora + " | " + nomeSensor + " (" + regiao + ") | "
+        return dataHora.format(FORMATO_DATA_HORA) + " | " + nomeSensor + " (" + regiao + ") | "
                 + valor + " " + tipoSensor.getUnidade();
     }
 }

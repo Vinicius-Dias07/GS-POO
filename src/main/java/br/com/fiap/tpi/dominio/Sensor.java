@@ -13,4 +13,15 @@ public interface Sensor {
     boolean estaFuncionando();
 
     TipoSensor getTipo();
+
+    // Os métodos abaixo já são implementados por ComponenteTerritorial.
+    // Declará-los aqui permite usar qualquer Sensor sem precisar de cast.
+
+    String getId();
+
+    String getNome();
+
+    String getRegiao();
+
+    String verificarStatus();
 }
