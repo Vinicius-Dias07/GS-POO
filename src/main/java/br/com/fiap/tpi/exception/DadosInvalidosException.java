@@ -1,4 +1,4 @@
-package br.com.fiap.tpi.excecao;
+package br.com.fiap.tpi.exception;
 
 /**
  * Lançada quando um dado do território é inválido: medição fora da faixa,

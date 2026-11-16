@@ -1,4 +1,4 @@
-package br.com.fiap.tpi.excecao;
+package br.com.fiap.tpi.exception;
 
 /**
  * Lançada quando uma fonte de dados (sensor ou gerador simulado) não responde.

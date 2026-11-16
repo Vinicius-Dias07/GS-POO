@@ -1,17 +1,17 @@
 package br.com.fiap.tpi;
 
-import br.com.fiap.tpi.dominio.Medicao;
-import br.com.fiap.tpi.dominio.PontoMonitoramento;
-import br.com.fiap.tpi.dominio.Sensor;
-import br.com.fiap.tpi.dominio.SensorPluviometro;
-import br.com.fiap.tpi.excecao.DadosInvalidosException;
-import br.com.fiap.tpi.excecao.FonteIndisponivelException;
+import br.com.fiap.tpi.domain.Medicao;
+import br.com.fiap.tpi.domain.PontoMonitoramento;
+import br.com.fiap.tpi.domain.Sensor;
+import br.com.fiap.tpi.domain.SensorPluviometro;
+import br.com.fiap.tpi.exception.DadosInvalidosException;
+import br.com.fiap.tpi.exception.FonteIndisponivelException;
+import br.com.fiap.tpi.service.ServicoMonitoramento;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Profile;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -25,10 +25,14 @@ import java.util.Scanner;
 @Profile("!test")
 public class SistemaMonitoramento implements CommandLineRunner {
 
+    private final ServicoMonitoramento servico;
     private final List<PontoMonitoramento> pontos = new ArrayList<>();
-    // Fase 3: medições ficam só em memória. Na Fase 4 passam a ser gravadas no banco.
-    private final List<Medicao> medicoesEmMemoria = new ArrayList<>();
     private Scanner entrada;
+
+    /** O Spring injeta o serviço pelo construtor. */
+    public SistemaMonitoramento(ServicoMonitoramento servico) {
+        this.servico = servico;
+    }
 
     public static void main(String[] args) {
         SpringApplication.run(SistemaMonitoramento.class, args);
@@ -54,6 +58,7 @@ public class SistemaMonitoramento implements CommandLineRunner {
             switch (opcao) {
                 case "1" -> verificarSensores();
                 case "2" -> registrarLeituraManual();
+                case "4" -> verHistorico();
                 case "0" -> continuar = false;
                 default -> System.out.println("Opção inválida: \"" + opcao + "\". Digite um número do menu.");
             }
@@ -79,8 +84,9 @@ public class SistemaMonitoramento implements CommandLineRunner {
     private void exibirMenu() {
         System.out.println();
         System.out.println("=== Territory Predictive Insights — Clima Local ===");
-        System.out.println("1. Verificar sensores (ler medições)");
+        System.out.println("1. Verificar sensores (ler e gravar medições)");
         System.out.println("2. Registrar leitura manual");
+        System.out.println("4. Ver histórico de medições por sensor");
         System.out.println("0. Sair");
     }
 
@@ -99,10 +105,8 @@ public class SistemaMonitoramento implements CommandLineRunner {
     /** Um sensor com falha gera aviso, mas não impede a leitura dos demais. */
     private void lerUmSensor(Sensor sensor) {
         try {
-            double valor = sensor.lerValor();
-            Medicao medicao = criarMedicao(sensor, valor);
-            medicoesEmMemoria.add(medicao);
-            System.out.println("  ✔ " + medicao);
+            Medicao medicao = servico.lerSensor(sensor);
+            System.out.println("  ✔ Gravada: " + medicao);
         } catch (FonteIndisponivelException e) {
             System.out.println("  ⚠ Aviso: " + e.getMessage() + ". Leitura ignorada.");
         } catch (DadosInvalidosException e) {
@@ -114,30 +118,44 @@ public class SistemaMonitoramento implements CommandLineRunner {
 
     private void registrarLeituraManual() {
         try {
-            String sensorId = lerLinha("ID do sensor (ex.: PLU-01): ");
+            String sensorId = lerLinha("ID do sensor (" + listarIdsSensores() + "): ");
             if (sensorId == null) {
                 return;
             }
-            Sensor sensor = buscarSensorPorId(sensorId.trim());
+            Sensor sensor = buscarSensorPorId(sensorId);
             String texto = lerLinha("Valor medido (" + sensor.getTipo().getUnidade() + "): ");
             if (texto == null) {
                 return;
             }
-            double valor = converterDecimal(texto);
-            Medicao medicao = criarMedicao(sensor, valor);
-            medicoesEmMemoria.add(medicao);
-            System.out.println("Leitura registrada: " + medicao);
+            Medicao medicao = servico.registrarLeituraManual(sensor, converterDecimal(texto));
+            System.out.println("Leitura gravada: " + medicao);
         } catch (DadosInvalidosException e) {
             System.out.println("Não foi possível registrar: " + e.getMessage());
         }
     }
 
-    // ---------- Apoio ----------
+    // ---------- Opção 4 ----------
 
-    private Medicao criarMedicao(Sensor sensor, double valor) throws DadosInvalidosException {
-        return Medicao.criar(sensor.getId(), sensor.getNome(), sensor.getRegiao(),
-                sensor.getTipo(), valor, LocalDateTime.now());
+    private void verHistorico() {
+        try {
+            String sensorId = lerLinha("ID do sensor (" + listarIdsSensores() + "): ");
+            if (sensorId == null) {
+                return;
+            }
+            Sensor sensor = buscarSensorPorId(sensorId);
+            List<Medicao> historico = servico.buscarHistoricoPorSensor(sensor.getId());
+            if (historico.isEmpty()) {
+                System.out.println("Nenhuma medição gravada para " + sensor.getNome() + ".");
+                return;
+            }
+            System.out.println("Histórico de " + sensor.getNome() + " (" + historico.size() + " medições):");
+            historico.forEach(m -> System.out.println("  " + m));
+        } catch (DadosInvalidosException e) {
+            System.out.println("Não foi possível consultar: " + e.getMessage());
+        }
     }
+
+    // ---------- Apoio ----------
 
     private Sensor buscarSensorPorId(String sensorId) throws DadosInvalidosException {
         for (PontoMonitoramento ponto : pontos) {
@@ -150,12 +168,22 @@ public class SistemaMonitoramento implements CommandLineRunner {
         throw new DadosInvalidosException("Sensor \"" + sensorId + "\" não encontrado no território");
     }
 
+    private String listarIdsSensores() {
+        List<String> ids = new ArrayList<>();
+        for (PontoMonitoramento ponto : pontos) {
+            for (Sensor sensor : ponto.getSensores()) {
+                ids.add(sensor.getId());
+            }
+        }
+        return String.join(", ", ids);
+    }
+
     /** Aceita vírgula ou ponto como separador decimal. */
     private double converterDecimal(String texto) throws DadosInvalidosException {
         try {
-            return Double.parseDouble(texto.trim().replace(',', '.'));
+            return Double.parseDouble(texto.replace(',', '.'));
         } catch (NumberFormatException e) {
-            throw new DadosInvalidosException("\"" + texto.trim() + "\" não é um número válido", e);
+            throw new DadosInvalidosException("\"" + texto + "\" não é um número válido", e);
         }
     }
 

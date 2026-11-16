@@ -1,6 +1,6 @@
-package br.com.fiap.tpi.dominio;
+package br.com.fiap.tpi.domain;
 
-import br.com.fiap.tpi.excecao.DadosInvalidosException;
+import br.com.fiap.tpi.exception.DadosInvalidosException;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;

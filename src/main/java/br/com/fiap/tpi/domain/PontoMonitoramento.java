@@ -1,6 +1,6 @@
-package br.com.fiap.tpi.dominio;
+package br.com.fiap.tpi.domain;
 
-import br.com.fiap.tpi.excecao.DadosInvalidosException;
+import br.com.fiap.tpi.exception.DadosInvalidosException;
 
 import java.util.ArrayList;
 import java.util.Collections;

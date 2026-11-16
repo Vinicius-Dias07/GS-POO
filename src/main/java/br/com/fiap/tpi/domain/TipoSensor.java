@@ -1,4 +1,4 @@
-package br.com.fiap.tpi.dominio;
+package br.com.fiap.tpi.domain;
 
 /**
  * Tipos de sensor do território. Cada tipo conhece sua unidade e a faixa

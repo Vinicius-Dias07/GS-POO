@@ -1,6 +1,6 @@
-package br.com.fiap.tpi.dominio;
+package br.com.fiap.tpi.domain;
 
-import br.com.fiap.tpi.excecao.DadosInvalidosException;
+import br.com.fiap.tpi.exception.DadosInvalidosException;
 
 /**
  * Base abstrata de tudo que existe no território (pontos vulneráveis e sensores).

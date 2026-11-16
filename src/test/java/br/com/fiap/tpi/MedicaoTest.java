@@ -1,8 +1,8 @@
 package br.com.fiap.tpi;
 
-import br.com.fiap.tpi.dominio.Medicao;
-import br.com.fiap.tpi.dominio.TipoSensor;
-import br.com.fiap.tpi.excecao.DadosInvalidosException;
+import br.com.fiap.tpi.domain.Medicao;
+import br.com.fiap.tpi.domain.TipoSensor;
+import br.com.fiap.tpi.exception.DadosInvalidosException;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;

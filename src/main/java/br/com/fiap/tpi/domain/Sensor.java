@@ -1,6 +1,6 @@
-package br.com.fiap.tpi.dominio;
+package br.com.fiap.tpi.domain;
 
-import br.com.fiap.tpi.excecao.FonteIndisponivelException;
+import br.com.fiap.tpi.exception.FonteIndisponivelException;
 
 /**
  * Contrato comum a todos os sensores. Quem usa um sensor não precisa saber

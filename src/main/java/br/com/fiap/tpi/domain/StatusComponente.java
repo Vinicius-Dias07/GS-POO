@@ -1,4 +1,4 @@
-package br.com.fiap.tpi.dominio;
+package br.com.fiap.tpi.domain;
 
 /**
  * Situação operacional de um componente do território.
