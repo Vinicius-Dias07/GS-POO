@@ -13,9 +13,8 @@ a previsão ultrapassa limiares configuráveis.
 
 | Nome | RM |
 |---|---|
-| _(preencher)_ | _(preencher)_ |
-| _(preencher)_ | _(preencher)_ |
-| _(preencher)_ | _(preencher)_ |
+| Bruno Anselmo da Silva | 566521 |
+| Vinicius Ribeiro Dias | 566468 |
 
 ---
 
@@ -246,9 +245,30 @@ por agir precisa ficar com pessoas que podem avaliar o contexto e responder por 
 
 ## 8. Uso de IA
 
-_(A equipe deve preencher com honestidade: em quais partes a IA foi usada — por exemplo, para
-tirar dúvidas de conceitos, sugerir estrutura ou revisar textos — e como cada integrante revisou,
-testou e entendeu o código antes de entregar.)_
+A equipe usou um assistente de IA (Claude Code) como **apoio ao aprendizado e à produtividade**,
+como o enunciado permite. Onde ela entrou:
+
+- **Planejamento:** organizar o enunciado em um roteiro de fases (setup → domínio → exceções →
+  persistência → previsão e alertas → padrões → bônus → README), seguindo a ordem sugerida pela FIAP.
+- **Dúvidas de conceito:** diferença entre classe abstrata e interface, uso de `super` na
+  sobrescrita, exceções verificadas, quando Factory e Builder fazem sentido, como o Spring Data
+  JPA gera consultas a partir do nome do método e como usar mocks do Mockito.
+- **Rascunhos de código e testes:** a IA sugeriu versões iniciais de classes e testes, sempre
+  dentro das decisões da equipe (recorte de clima local, limiares, nomes em português, Factory + Builder).
+- **Documentação:** apoio na redação e organização deste README.
+
+**Como a equipe revisou:**
+
+- trabalhamos **uma fase por vez**: ao fim de cada fase rodamos `mvn test` e o programa,
+  conferimos o resultado e só então fizemos o commit — os commits são dos integrantes;
+- cada integrante leu e discutiu o código das partes do outro, para que qualquer um consiga
+  explicar qualquer trecho na correção;
+- conferimos à mão os cálculos das previsões (ex.: média de [10, 20, 30, 40, 50] = 30) e
+  verificamos que o teste fica vermelho se o cálculo for alterado;
+- testamos pelo menu os casos de erro (chuva negativa, código de acesso errado, entrada não
+  numérica) e a persistência depois de reiniciar o programa;
+- as decisões de domínio — público beneficiado, limiares, quando o sistema deve se calar e a
+  reflexão crítica — são da equipe; a IA ajudou a organizar o texto, não a decidir.
 
 ---
 
@@ -256,9 +276,10 @@ testou e entendeu o código antes de entregar.)_
 
 | Integrante | Responsabilidade |
 |---|---|
-| _(preencher)_ | Domínio (`ComponenteTerritorial`, sensores, `DadosTerritorio`) + exceções customizadas |
-| _(preencher)_ | Persistência (entidades JPA, repositórios, configuração do H2) + menu |
-| _(preencher)_ | Previsões, alertas, padrões Factory/Builder e testes unitários |
+| Vinicius Ribeiro Dias (RM 566468) | Setup do projeto (Maven, Spring Boot, H2), domínio (`ComponenteTerritorial`, `PontoMonitoramento`, sensores, `DadosTerritorio`), exceções customizadas, persistência (entidades JPA e repositórios) e menu de console |
+| Bruno Anselmo da Silva (RM 566521) | Previsões (`EstrategiaPrevisao`, média móvel, comparação), alertas e limiares, padrões Factory e Builder, exportação CSV (bônus), testes unitários e README |
+
+As revisões foram cruzadas: cada integrante revisou e testou as partes do outro antes do commit.
 
 ---
 
