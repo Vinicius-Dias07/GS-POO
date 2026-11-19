@@ -280,6 +280,8 @@ como o enunciado permite. Onde ela entrou:
 | Bruno Anselmo da Silva (RM 566521) | Previsões (`EstrategiaPrevisao`, média móvel, comparação), alertas e limiares, padrões Factory e Builder, exportação CSV (bônus), testes unitários e README |
 
 As revisões foram cruzadas: cada integrante revisou e testou as partes do outro antes do commit.
+Os commits de código foram feitos pelo Vinicius, que integrava as partes; a autoria de cada parte
+segue a tabela acima.
 
 ---
 
